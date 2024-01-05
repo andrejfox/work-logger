@@ -19,3 +19,21 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.register<Jar>("fatJar") {
+    archiveBaseName.set("DiscordMessageBot")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes("Main-Class" to "io.github.ANDREJ6693.discord_bot_java.Main")
+    }
+
+    from(configurations.runtimeClasspath.get().map {
+        if (it.isDirectory) {
+            it
+        } else {
+            zipTree(it)
+        }
+    })
+
+    with(tasks.jar.get())
+}

@@ -1,6 +1,6 @@
-package io.github.ANDREJ6693.discord_bot_java;
+package io.github.andrej6693.worklogger;
 
-import io.github.ANDREJ6693.discord_bot_java.commands.AddCommand;
+import io.github.andrej6693.worklogger.commands.AddCommand;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;

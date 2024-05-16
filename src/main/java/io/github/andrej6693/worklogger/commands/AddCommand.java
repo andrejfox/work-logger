@@ -1,4 +1,4 @@
-package io.github.ANDREJ6693.discord_bot_java.commands;
+package io.github.andrej6693.worklogger.commands;
 
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.*;
 
-import static io.github.ANDREJ6693.discord_bot_java.Util.*;
+import static io.github.andrej6693.worklogger.Util.*;
 
 public class AddCommand extends ListenerAdapter {
     @Override

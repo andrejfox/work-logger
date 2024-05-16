@@ -1,4 +1,4 @@
-package io.github.ANDREJ6693.discord_bot_java;
+package io.github.andrej6693.worklogger;
 
 import com.google.gson.*;
 import com.moandjiezana.toml.Toml;

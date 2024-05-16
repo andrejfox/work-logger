@@ -23,10 +23,12 @@ tasks.test {
 }
 
 tasks.register<Jar>("fatJar") {
-    archiveBaseName.set("DiscordMessageBot")
+    group = "build"
+    archiveBaseName.set("work-logger")
+    archiveClassifier.set("all")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
-        attributes("Main-Class" to "io.github.ANDREJ6693.discord_bot_java.Main")
+        attributes("Main-Class" to "io.github.andrej6693.worklogger.Main")
     }
 
     from(configurations.runtimeClasspath.get().map {

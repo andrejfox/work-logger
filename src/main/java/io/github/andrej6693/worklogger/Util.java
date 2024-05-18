@@ -2,18 +2,19 @@ package io.github.andrej6693.worklogger;
 
 import com.google.gson.*;
 import com.moandjiezana.toml.Toml;
+import net.dv8tion.jda.api.interactions.commands.Command;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class Util {
     private Util () {}
@@ -142,5 +143,43 @@ public final class Util {
 
     public static PaymentType getPaymentTypeFromIndex(int index) {
         return CONFIG.paymentTypes.get(index);
+    }
+
+    public static List<Command.Choice> collectJsonFiles(String query) {
+        List<String> jsonFiles;
+        try (Stream<Path> paths = Files.walk(Paths.get("./data/"), FileVisitOption.FOLLOW_LINKS)) {
+            jsonFiles = paths
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(".json"))
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .map(fileName -> fileName.substring(0, fileName.length() - 5))
+                    .toList();
+        } catch (IOException e) {
+            return new ArrayList<>();
+        }
+
+        String lowercaseQuery = query.toLowerCase();
+
+        return jsonFiles.stream()
+                .filter(item -> item.toLowerCase().contains(lowercaseQuery))
+                .limit(25)
+                .map(item -> new Command.Choice(item, item.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public static String getPathFromDate(String fileName) {
+        String finalFileName = fileName.substring(0, 1).toUpperCase() + fileName.substring(1);
+        try (Stream<Path> paths = Files.walk(Paths.get("./data/"), FileVisitOption.FOLLOW_LINKS)) {
+            return paths
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(".json"))
+                    .filter(p -> p.getFileName().toString().equals(finalFileName + ".json"))
+                    .map(Path::toString)
+                    .findFirst()
+                    .orElse(null);
+        } catch (IOException e) {
+            return "no date";
+        }
     }
 }

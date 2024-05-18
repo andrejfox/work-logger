@@ -28,7 +28,7 @@ public class AddCommand extends ListenerAdapter {
                 throw new RuntimeException(e);
             }
             Path path = Path.of("data/" + year + "/" + month + "_" + year + ".json");
-            int type = Objects.requireNonNull(event.getOption("type")).getAsInt();
+            int index = Objects.requireNonNull(event.getOption("type")).getAsInt();
             WorkDetail workDetail = new WorkDetail(
                     date,
                     Objects.requireNonNull(event.getOption("duration")).getAsInt(),
@@ -36,7 +36,7 @@ public class AddCommand extends ListenerAdapter {
             );
 
             createMonthJsonIfNotExists(month, year, path);
-            addData(month, year, type, workDetail, path);
+            addData(month, year, getPaymentTypeFromIndex(index), workDetail, path);
 
             event.reply("Successfully added work for " + getDateString(date)).queue();
         }
@@ -57,8 +57,8 @@ public class AddCommand extends ListenerAdapter {
 
     private static OptionData createWorkTypeOptionDate() {
         OptionData data = new OptionData(OptionType.INTEGER, "type", "Type of payment.");
-        for (Integer workType : CONFIG.workTypes()) {
-            data.addChoice(workType + " " + CONFIG.currency() + "/h", workType);
+        for (PaymentType paymentType : CONFIG.paymentTypes()) {
+            data.addChoice(paymentType.type() + " " + CONFIG.currency() + "/h (" + paymentType.tag() + ")", getPaymentTypeIndex(paymentType));
         }
         return data.setRequired(true);
     }

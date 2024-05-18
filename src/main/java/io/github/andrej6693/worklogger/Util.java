@@ -18,12 +18,14 @@ import java.util.*;
 public final class Util {
     private Util () {}
 
-    public record Config(String botToken, String currency, List<Integer> workTypes) {}
+    public record Config(String botToken, String currency, List<PaymentType> paymentTypes) {}
     public static Config CONFIG = null;
 
-    public record MonthData(String month, int year, List<WorkEntry> workEntries) {}
-    public record WorkEntry(int paymentType, List<WorkDetail> workDetails) {}
+    public record MonthData(String month, int year, PayStatus payStatus, List<WorkEntry> workEntries) {}
+    public record WorkEntry(PaymentType paymentType, List<WorkDetail> workDetails) {}
     public record WorkDetail(Date date, int duration, String note) {}
+    public record PayStatus(boolean payed, int amount) {}
+    public record PaymentType(String tag, int type) {}
 
     public static void loadConfig() {
         CONFIG = new Toml().read(new File("config.toml")).to(Config.class);
@@ -38,12 +40,12 @@ public final class Util {
         }
     }
 
-    public static void addData(String month, int year, int paymentType, WorkDetail workDetail, Path path) {
+    public static void addData(String month, int year, PaymentType paymentType, WorkDetail workDetail, Path path) {
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").setPrettyPrinting().create();
         MonthData monthData = readMonthDataFromFile(path);
 
         if (monthData == null) {
-            monthData = new MonthData(month, year, new ArrayList<>());
+            monthData = new MonthData(month, year, new PayStatus(false, 0),new ArrayList<>());
         }
 
         if (monthData.workEntries.isEmpty()) {
@@ -84,7 +86,7 @@ public final class Util {
 
         try {
             Gson gson = new Gson();
-            String jsonData = gson.toJson(new MonthData(month, year, new ArrayList<>()));
+            String jsonData = gson.toJson(new MonthData(month, year,  new PayStatus(false, 0), new ArrayList<>()));
             Files.createDirectories(path.getParent());
             Files.createFile(path);
             try (FileWriter fileWriter = new FileWriter(path.toFile())) {
@@ -127,5 +129,18 @@ public final class Util {
         } catch (IOException e) {
             throw new RuntimeException("Error reading MonthData from file", e);
         }
+    }
+
+    public static int getPaymentTypeIndex(PaymentType paymentType) {
+        for (int i = 0; i < CONFIG.paymentTypes().size(); i++) {
+            if (CONFIG.paymentTypes.get(i) == paymentType) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static PaymentType getPaymentTypeFromIndex(int index) {
+        return CONFIG.paymentTypes.get(index);
     }
 }

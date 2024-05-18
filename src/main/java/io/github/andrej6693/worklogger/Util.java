@@ -21,7 +21,7 @@ public final class Util {
     public record Config(String botToken, String currency, List<PaymentType> paymentTypes) {}
     public static Config CONFIG = null;
 
-    public record MonthData(String month, int year, PayStatus payStatus, List<WorkEntry> workEntries) {}
+    public record MonthData(PayStatus payStatus, List<WorkEntry> workEntries) {}
     public record WorkEntry(PaymentType paymentType, List<WorkDetail> workDetails) {}
     public record WorkDetail(Date date, int duration, String note) {}
     public record PayStatus(boolean payed, int amount) {}
@@ -40,12 +40,12 @@ public final class Util {
         }
     }
 
-    public static void addData(String month, int year, PaymentType paymentType, WorkDetail workDetail, Path path) {
+    public static void addData(PaymentType paymentType, WorkDetail workDetail, Path path) {
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").setPrettyPrinting().create();
         MonthData monthData = readMonthDataFromFile(path);
 
         if (monthData == null) {
-            monthData = new MonthData(month, year, new PayStatus(false, 0),new ArrayList<>());
+            monthData = new MonthData(new PayStatus(false, 0),new ArrayList<>());
         }
 
         if (monthData.workEntries.isEmpty()) {
@@ -75,7 +75,7 @@ public final class Util {
         }
     }
 
-    public static void createMonthJsonIfNotExists(String month, int year, Path path) {
+    public static void createMonthJsonIfNotExists(Path path) {
         try {
             Files.createDirectories(path.getParent());
             Files.createFile(path);
@@ -86,7 +86,7 @@ public final class Util {
 
         try {
             Gson gson = new Gson();
-            String jsonData = gson.toJson(new MonthData(month, year,  new PayStatus(false, 0), new ArrayList<>()));
+            String jsonData = gson.toJson(new MonthData(new PayStatus(false, 0), new ArrayList<>()));
             Files.createDirectories(path.getParent());
             Files.createFile(path);
             try (FileWriter fileWriter = new FileWriter(path.toFile())) {

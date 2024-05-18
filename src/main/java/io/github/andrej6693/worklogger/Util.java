@@ -137,7 +137,7 @@ public final class Util {
                 return i;
             }
         }
-        return -1;
+        return 0;
     }
 
     public static PaymentType getPaymentTypeFromIndex(int index) {

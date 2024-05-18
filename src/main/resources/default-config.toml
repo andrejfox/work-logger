@@ -1,3 +1,5 @@
 botToken = "<Bot token goes here!>"
 currency = "€"
-workTypes = []
+paymentTypes = [
+    { tag = "<name>", type = 10 }
+]

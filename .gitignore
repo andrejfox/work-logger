@@ -43,3 +43,4 @@ bin/
 
 config.toml
 /data/
+/mail.txt

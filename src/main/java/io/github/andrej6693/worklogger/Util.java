@@ -13,13 +13,12 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Util {
     private Util () {}
 
-    public record Config(String botToken, String currency, List<PaymentType> paymentTypes) {}
+    public record Config(String botToken, String languageTag, String currency, List<PaymentType> paymentTypes) {}
     public static Config CONFIG = null;
 
     public record MonthData(PayStatus payStatus, List<WorkEntry> workEntries) {}
@@ -31,14 +30,139 @@ public final class Util {
     public static void loadConfig() {
         CONFIG = new Toml().read(new File("config.toml")).to(Config.class);
     }
-    public static void createDefaultConfigIfNotExists() {
-        try (InputStream inputStream = Main.class.getResourceAsStream("/default-config.toml")) {
-            assert inputStream != null;
-            Files.copy(inputStream, Path.of("config.toml"));
+    public static void createDefaultIfNotExists(String name, String defaultLocation) {
+        try (InputStream inputStream = Main.class.getResourceAsStream(defaultLocation)) {
+            Files.copy(Objects.requireNonNull(inputStream), Path.of(name));
         } catch (FileAlreadyExistsException ignored) {
         } catch (IOException e) {
-            throw new RuntimeException("Unable to create default config file.", e);
+            throw new RuntimeException("Unable to create default " + name + " file.", e);
         }
+    }
+
+    public static String writeMail(Path path) {
+        Gson gson = new Gson();
+        MonthData data;
+        String mail;
+        try {
+            data = gson.fromJson(Files.readString(path), MonthData.class);
+            mail =  Files.readString(Path.of("mail.txt"));
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading MonthData from file", e);
+        }
+
+        mail = mail.replace("{MONTH}", getMonthLocalName(data));
+        mail = mail.replace("{WORK_DATA}", createWorkData(data));
+        mail = mail.replace("{DATA_SUM}", createDataSum(data));
+
+        return mail;
+    }
+
+    public static String createWorkData(MonthData data) {
+        StringBuilder workDataBuilder = new StringBuilder();
+
+        for (WorkEntry workEntry : data.workEntries) {
+            String tag = workEntry.paymentType.tag;
+            int multiplier = workEntry.paymentType.type;
+            int hoursOfWork = 0;
+            StringBuilder workEntryBuilder = new StringBuilder();
+
+            int maxDateLength = 0;
+            int maxDurationLength = 0;
+            for (WorkDetail workDetail : workEntry.workDetails) {
+                int dazeLength = new SimpleDateFormat("d.M.", Locale.forLanguageTag(CONFIG.languageTag)).format(workDetail.date).length();
+                int durationLength = Integer.toString(workDetail.duration).length();
+                if (maxDateLength < dazeLength) {
+                    maxDateLength = dazeLength;
+                }
+                if (maxDurationLength < durationLength) {
+                    maxDurationLength = durationLength;
+                }
+            }
+
+            for (WorkDetail workDetail : workEntry.workDetails) {
+                StringBuilder date = new StringBuilder(new SimpleDateFormat("d.M.", Locale.forLanguageTag(CONFIG.languageTag)).format(workDetail.date));
+                if (date.length() != maxDateLength) {
+                    for (int i = 0; i < maxDateLength - date.length(); i++) {
+                        date.insert(0," ");
+                    }
+                }
+
+                String duration = workDetail.duration + "h";
+                if (duration.length() - 1 < maxDurationLength) {
+                    for (int i = 0; i < maxDurationLength - (duration.length() - 1); i++) {
+                        duration = duration.concat(" ");
+                    }
+                }
+
+                workEntryBuilder
+                        .append("   ")
+                        .append(date)
+                        .append(" - ")
+                        .append(duration)
+                        .append(" - ")
+                        .append(workDetail.note)
+                        .append("\n");
+
+                hoursOfWork += workDetail.duration;
+            }
+
+            workDataBuilder
+                    .append(tag)
+                    .append(": [").append(hoursOfWork)
+                    .append("h * ").append(multiplier)
+                    .append(CONFIG.currency)
+                    .append("/h = ")
+                    .append(hoursOfWork * multiplier)
+                    .append(CONFIG.currency)
+                    .append("]\n")
+                    .append(workEntryBuilder)
+                    .append("\n");
+        }
+
+        return String.valueOf(workDataBuilder);
+    }
+
+    public static String createDataSum(MonthData data) {
+        StringBuilder dataSumBuilder = new StringBuilder();
+
+        int max = 0;
+        int sum = 0;
+        for (WorkEntry workEntry : data.workEntries) {
+            String tag = workEntry.paymentType.tag;
+            int multiplier = workEntry.paymentType.type;
+            int hoursOfWork = 0;
+            int stringSize;
+            for (WorkDetail workDetail : workEntry.workDetails) {
+                hoursOfWork += workDetail.duration;
+            }
+            sum += multiplier * hoursOfWork;
+
+            dataSumBuilder
+                    .append(multiplier * hoursOfWork)
+                    .append(CONFIG.currency)
+                    .append(" ");
+
+            dataSumBuilder
+                    .append("[")
+                    .append(tag)
+                    .append("]\n");
+
+            stringSize = Integer.toString(multiplier * hoursOfWork).length() + tag.length() + CONFIG.currency.length() + 3;
+            if (stringSize > max) max = stringSize;
+        }
+
+        dataSumBuilder.append("=".repeat(max));
+        dataSumBuilder.append("\n");
+        dataSumBuilder.append(sum).append(CONFIG.currency);
+
+        return String.valueOf(dataSumBuilder);
+    }
+
+    public static String getMonthLocalName(MonthData data) {
+        Date date = data.workEntries.getFirst().workDetails.getFirst().date;
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return new SimpleDateFormat("MMMM", Locale.forLanguageTag(CONFIG.languageTag)).format(date);
     }
 
     public static void addData(PaymentType paymentType, WorkDetail workDetail, Path path) {
@@ -119,7 +243,7 @@ public final class Util {
     public static String getDateString(Date date) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
-        DateFormat df = DateFormat.getDateInstance(DateFormat.LONG, Locale.forLanguageTag("sl-SI"));
+        DateFormat df = DateFormat.getDateInstance(DateFormat.LONG, Locale.ENGLISH);
         return df.format(calendar.getTime());
     }
 
@@ -147,7 +271,7 @@ public final class Util {
 
     public static List<Command.Choice> collectJsonFiles(String query) {
         List<String> jsonFiles;
-        try (Stream<Path> paths = Files.walk(Paths.get("./data/"), FileVisitOption.FOLLOW_LINKS)) {
+        try (Stream<Path> paths = Files.walk(Path.of("data/"))) {
             jsonFiles = paths
                     .filter(Files::isRegularFile)
                     .filter(p -> p.toString().endsWith(".json"))
@@ -159,22 +283,20 @@ public final class Util {
             return new ArrayList<>();
         }
 
-        String lowercaseQuery = query.toLowerCase();
-
+        String lowercaseQuery = query.toLowerCase(Locale.ROOT);
         return jsonFiles.stream()
-                .filter(item -> item.toLowerCase().contains(lowercaseQuery))
+                .filter(item -> item.toLowerCase(Locale.ROOT).contains(lowercaseQuery))
                 .limit(25)
-                .map(item -> new Command.Choice(item, item.toLowerCase()))
-                .collect(Collectors.toList());
+                .map(item -> new Command.Choice(item, getPathFromDate(item)))
+                .toList();
     }
 
     public static String getPathFromDate(String fileName) {
-        String finalFileName = fileName.substring(0, 1).toUpperCase() + fileName.substring(1);
         try (Stream<Path> paths = Files.walk(Paths.get("./data/"), FileVisitOption.FOLLOW_LINKS)) {
             return paths
                     .filter(Files::isRegularFile)
                     .filter(p -> p.toString().endsWith(".json"))
-                    .filter(p -> p.getFileName().toString().equals(finalFileName + ".json"))
+                    .filter(p -> p.getFileName().toString().equals(fileName + ".json"))
                     .map(Path::toString)
                     .findFirst()
                     .orElse(null);

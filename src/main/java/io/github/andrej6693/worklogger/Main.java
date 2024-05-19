@@ -8,7 +8,8 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 
 public class Main {
     public static void main(String[] args) {
-        Util.createDefaultConfigIfNotExists();
+        Util.createDefaultIfNotExists("mail.txt", "/default-mail.txt");
+        Util.createDefaultIfNotExists("config.toml", "/default-config.toml");
         Util.loadConfig();
 
         JDA api = JDABuilder.createDefault(Util.CONFIG.botToken())

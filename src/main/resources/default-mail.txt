@@ -1,0 +1,9 @@
+Dear Sir/Madam,
+Sending hours for {MONTH}.
+
+{WORK_DATA}
+In total:
+{DATA_SUM}
+
+Regards,
+Name Surname

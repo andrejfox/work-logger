@@ -1,4 +1,5 @@
 botToken = "<Bot token goes here!>"
+languageTag = "en"
 currency = "€"
 paymentTypes = [
     { tag = "<name>", type = 10 }

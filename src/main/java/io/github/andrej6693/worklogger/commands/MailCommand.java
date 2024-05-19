@@ -8,22 +8,23 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
 import static io.github.andrej6693.worklogger.Util.collectJsonFiles;
-import static io.github.andrej6693.worklogger.Util.getPathFromDate;
+import static io.github.andrej6693.worklogger.Util.writeMail;
 
 public class MailCommand extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         if (event.getName().equals("mail")) {
-            String path = getPathFromDate(Objects.requireNonNull(event.getOption("date")).getAsString());
+            String path = Objects.requireNonNull(event.getOption("date")).getAsString();
             if (Objects.equals(path, "no date")) {
                 event.reply("Invalid date!").setEphemeral(true).queue();
                 return;
             }
-            event.reply(path).queue();
+            event.reply("```" + Objects.requireNonNull(writeMail(Path.of(path))) + "```").setEphemeral(true).queue();
         }
     }
 

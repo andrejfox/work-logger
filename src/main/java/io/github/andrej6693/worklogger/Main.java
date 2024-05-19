@@ -11,6 +11,7 @@ public class Main {
         Util.createDefaultIfNotExists("mail.txt", "/default-mail.txt");
         Util.createDefaultIfNotExists("config.toml", "/default-config.toml");
         Util.loadConfig();
+        Util.loadTagOrder();
 
         JDA api = JDABuilder.createDefault(Util.CONFIG.botToken())
                 .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGE_REACTIONS)

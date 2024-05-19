@@ -27,8 +27,15 @@ public final class Util {
     public record PayStatus(boolean payed, int amount) {}
     public record PaymentType(String tag, int type) {}
 
+    private static final HashMap<String, Integer> tagOrder = new HashMap<>();
+
     public static void loadConfig() {
         CONFIG = new Toml().read(new File("config.toml")).to(Config.class);
+    }
+    public static void loadTagOrder() {
+        for (int i = 0; i < CONFIG.paymentTypes.size(); i++) {
+            tagOrder.put(CONFIG.paymentTypes.get(i).tag, i);
+        }
     }
     public static void createDefaultIfNotExists(String name, String defaultLocation) {
         try (InputStream inputStream = Main.class.getResourceAsStream(defaultLocation)) {
@@ -175,6 +182,10 @@ public final class Util {
 
         if (monthData.workEntries.isEmpty()) {
             monthData.workEntries.add(new WorkEntry(paymentType, new ArrayList<>()));
+        } else {
+            monthData.workEntries().sort(Comparator.comparing(entry ->
+                    tagOrder.getOrDefault(entry.paymentType().tag(), Integer.MAX_VALUE)
+            ));
         }
 
         int index;
@@ -191,6 +202,7 @@ public final class Util {
             monthData.workEntries.get(index).workDetails.add(workDetail);
         }
 
+        monthData.workEntries.get(index).workDetails.sort(Comparator.comparing(WorkDetail::date));
 
         String jsonData = gson.toJson(monthData);
         try (FileWriter fileWriter = new FileWriter(path.toFile())) {

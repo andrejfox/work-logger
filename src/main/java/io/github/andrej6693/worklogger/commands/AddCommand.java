@@ -1,7 +1,9 @@
 package io.github.andrej6693.worklogger.commands;
 
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -42,24 +44,24 @@ public class AddCommand extends ListenerAdapter {
         }
     }
 
-    public static CommandData register() {
-        return Commands.slash("add", "Add work.")
-                .addOptions(
-                        createWorkTypeOptionData(),
-                        new OptionData(OptionType.STRING, "date", "Date of work. Format: dd/mm/yyyy")
-                                .setRequired(true),
-                        new OptionData(OptionType.STRING, "duration", "Duration of work.")
-                                .setRequired(true),
-                        new OptionData(OptionType.STRING, "note", "Description of work.")
-                                .setRequired(true)
-                );
+    @Override
+    public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
+        if (event.getName().equals("add") && event.getFocusedOption().getName().equals("type")) {
+            String userInput = event.getFocusedOption().getValue();
+            List<Command.Choice> options = collectTypes(userInput);
+            boolean isValidInput = options.stream().anyMatch(choice -> choice.getName().equalsIgnoreCase(userInput));
+
+            if (!isValidInput) {
+                event.replyChoices(options).queue();
+            }
+        }
     }
 
-    private static OptionData createWorkTypeOptionData() {
-        OptionData data = new OptionData(OptionType.INTEGER, "type", "Type of payment.");
-        for (PaymentType paymentType : CONFIG.paymentTypes()) {
-            data.addChoice(paymentType.type() + " " + CONFIG.currency() + "/h (" + paymentType.tag() + ")", getPaymentTypeIndex(paymentType));
-        }
-        return data.setRequired(true);
+    public static CommandData register() {
+        return Commands.slash("add", "Add work.")
+                .addOption(OptionType.INTEGER, "type", "Type of payment.", true, true)
+                .addOption(OptionType.STRING, "date", "Date of work. Format: dd/mm/yyyy", true)
+                .addOption(OptionType.STRING, "duration", "Duration of work.", true)
+                .addOption(OptionType.STRING, "note", "Description of work.", true);
     }
 }

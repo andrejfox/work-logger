@@ -182,10 +182,6 @@ public final class Util {
 
         if (monthData.workEntries.isEmpty()) {
             monthData.workEntries.add(new WorkEntry(paymentType, new ArrayList<>()));
-        } else {
-            monthData.workEntries().sort(Comparator.comparing(entry ->
-                    tagOrder.getOrDefault(entry.paymentType().tag(), Integer.MAX_VALUE)
-            ));
         }
 
         int index;
@@ -203,6 +199,9 @@ public final class Util {
         }
 
         monthData.workEntries.get(index).workDetails.sort(Comparator.comparing(WorkDetail::date));
+        monthData.workEntries().sort(Comparator.comparing(entry ->
+                tagOrder.getOrDefault(entry.paymentType().tag(), Integer.MAX_VALUE)
+        ));
 
         String jsonData = gson.toJson(monthData);
         try (FileWriter fileWriter = new FileWriter(path.toFile())) {
@@ -301,6 +300,108 @@ public final class Util {
                 .limit(25)
                 .map(item -> new Command.Choice(item, getPathFromDate(item)))
                 .toList();
+    }
+
+    public static List<Command.Choice> collectWorkEntries(Path path, PaymentType type, String query) {
+        WorkEntry entry = readMonthDataFromFile(path).workEntries.get(tagOrder.get(type.tag));
+        List<String> options;
+        try (Stream<WorkDetail> details = entry.workDetails.stream()) {
+            options = details
+                    .map(Util::getWorkDetailString)
+                    .toList();
+        }
+
+        System.out.println(entry.workDetails.getFirst());
+        System.out.println(getWorkDetailFromString(options.getFirst(), getYearFromPath(path)));
+        System.out.println(entry.workDetails.indexOf(getWorkDetailFromString(options.getFirst(), getYearFromPath(path))));
+
+        String lowercaseQuery = query.toLowerCase(Locale.ROOT);
+        return options.stream()
+                .filter(item -> item.toLowerCase(Locale.ROOT).contains(lowercaseQuery))
+                .limit(25)
+                .map(item -> new Command.Choice(item, entry.workDetails.indexOf(getWorkDetailFromString(item, getYearFromPath(path)))))
+                .toList();
+    }
+
+    public static List<Command.Choice> collectTypes(String query) {
+        List<String> options;
+        try (Stream<PaymentType> details = CONFIG.paymentTypes.stream()) {
+            options = details
+                    .map(Util::getPaymentTypeString)
+                    .toList();
+        }
+
+        String lowercaseQuery = query.toLowerCase(Locale.ROOT);
+        return options.stream()
+                .filter(item -> item.toLowerCase(Locale.ROOT).contains(lowercaseQuery))
+                .limit(25)
+                .map(item -> new Command.Choice(item, getPaymentTypeIndexFromString(item)))
+                .toList();
+    }
+
+    private static String getPaymentTypeString(PaymentType type) {
+        return type.type + " " + CONFIG.currency() + "/h (" + type.tag + ")";
+    }
+
+    private static PaymentType getPaymentTypeFromString(String string) {
+        String[] arr = string.split(" " + CONFIG.currency() + "/h \\(");
+        int type = Integer.parseInt(arr[0]);
+        String tag = arr[1];
+        for (int i = 2; i < arr.length; i++) {
+            tag = tag.concat(" " + CONFIG.currency() + "/h \\(" + arr[i]);
+        }
+        tag = tag.substring(0, tag.length() - 1);
+
+        return new PaymentType(tag, type);
+    }
+
+    public static int getPaymentTypeIndexFromString(String string) {
+        PaymentType type = getPaymentTypeFromString(string);
+        return tagOrder.get(type.tag);
+    }
+
+    private static int getYearFromPath(Path path) {
+        String pathString = path.toString();
+        pathString = pathString.substring(0, pathString.length() - 5);
+        String[] arr = pathString.split("_");
+        pathString = arr[arr.length - 1];
+        return Integer.parseInt(pathString);
+    }
+
+    public static void removeWork(Path path, PaymentType type, int index) {
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").setPrettyPrinting().create();
+        MonthData monthData = readMonthDataFromFile(path);
+
+        monthData.workEntries.get(tagOrder.get(type.tag)).workDetails.remove(index);
+
+        String jsonData = gson.toJson(monthData);
+        try (FileWriter fileWriter = new FileWriter(path.toFile())) {
+            fileWriter.write(jsonData);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String getWorkDetailString(WorkDetail detail) {
+        String detailString = new SimpleDateFormat("d.M.", Locale.forLanguageTag(CONFIG.languageTag)).format(detail.date);
+        return detailString + " " + detail.duration + " " + detail.note;
+    }
+
+    public static WorkDetail getWorkDetailFromString(String detailString, int year) {
+        String[] strArr = detailString.split(" ");
+        String note = strArr[2];
+        for (int i = 3; i < strArr.length; i++) {
+            note = note.concat(" " + strArr[i]);
+        }
+        return new WorkDetail(getDateFromString(strArr[0], year), Integer.parseInt(strArr[1]), note);
+    }
+
+    private static Date getDateFromString(String strDate, int year) {
+        strDate = strDate.concat(Integer.toString(year));
+        try {
+             return new SimpleDateFormat("d.M.yyyy", Locale.forLanguageTag(CONFIG.languageTag)).parse(strDate);
+        } catch (ParseException ignored) {}
+        return null;
     }
 
     public static String getPathFromDate(String fileName) {

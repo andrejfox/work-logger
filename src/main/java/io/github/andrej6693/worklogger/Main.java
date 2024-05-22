@@ -2,9 +2,13 @@ package io.github.andrej6693.worklogger;
 
 import io.github.andrej6693.worklogger.commands.AddCommand;
 import io.github.andrej6693.worklogger.commands.MailCommand;
+import io.github.andrej6693.worklogger.commands.RmCommand;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+
+import java.nio.file.Path;
+import java.sql.Date;
 
 public class Main {
     public static void main(String[] args) {
@@ -17,12 +21,15 @@ public class Main {
                 .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGE_REACTIONS)
                 .addEventListeners(
                         new AddCommand(),
-                        new MailCommand())
+                        new MailCommand(),
+                        new RmCommand()
+                )
                 .build();
 
         api.updateCommands().addCommands(
                 AddCommand.register(),
-                MailCommand.register()
+                MailCommand.register(),
+                RmCommand.register()
         ).queue();
     }
 }

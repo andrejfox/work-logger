@@ -7,11 +7,9 @@ import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
-import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 import java.nio.file.Path;
-import java.text.ParseException;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -31,38 +29,37 @@ public class RmCommand extends ListenerAdapter {
             }
         }
 
-        @Override
-        public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
-            if (event.getName().equals("rm") && event.getFocusedOption().getName().equals("date")) {
-                String userInput = event.getFocusedOption().getValue();
-                List<Command.Choice> options = collectJsonFiles(userInput);
-                boolean isValidInput = options.stream().anyMatch(choice -> choice.getName().equalsIgnoreCase(userInput));
+    @Override
+    public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
+        String commandName = event.getName();
+        String focusedOptionName = event.getFocusedOption().getName();
+        String userInput = event.getFocusedOption().getValue();
+        List<Command.Choice> options = new ArrayList<>();
 
-                if (!isValidInput) {
-                    event.replyChoices(options).queue();
-                }
+        String date;
+        if (commandName.equals("rm")) {
+            switch (focusedOptionName) {
+                case "date":
+                    options = collectJsonFiles(userInput);
+                    break;
+                case "type":
+                    date = Objects.requireNonNull(event.getOption("date")).getAsString();
+                    options = collectTypes(date, userInput);
+                    break;
+                case "work":
+                    date = Objects.requireNonNull(event.getOption("date")).getAsString();
+                    int typeIndex = Objects.requireNonNull(event.getOption("type")).getAsInt();
+                    options = collectWorkEntries(Path.of(date), getPaymentTypeFromIndex(typeIndex), userInput);
+                    break;
             }
 
-            if (event.getName().equals("rm") && event.getFocusedOption().getName().equals("type")) {
-                String userInput = event.getFocusedOption().getValue();
-                List<Command.Choice> options = collectTypes(userInput);
-                boolean isValidInput = options.stream().anyMatch(choice -> choice.getName().equalsIgnoreCase(userInput));
-
-                if (!isValidInput) {
-                    event.replyChoices(options).queue();
-                }
-            }
-
-            if (event.getName().equals("rm") && event.getFocusedOption().getName().equals("work")) {
-                String userInput1 = event.getFocusedOption().getValue();
-                List<Command.Choice> options = collectWorkEntries(Path.of(Objects.requireNonNull(event.getOption("date")).getAsString()), getPaymentTypeFromIndex(Objects.requireNonNull(event.getOption("type")).getAsInt()), userInput1);
-                boolean isValidInput = options.stream().anyMatch(choice -> choice.getName().equalsIgnoreCase(userInput1));
-
-                if (!isValidInput) {
-                    event.replyChoices(options).queue();
-                }
+            boolean isValidInput = options.stream().anyMatch(choice -> choice.getName().equalsIgnoreCase(userInput));
+            if (!isValidInput) {
+                event.replyChoices(options).queue();
             }
         }
+    }
+
 
         public static CommandData register() {
             return Commands.slash("rm", "Removes work.")

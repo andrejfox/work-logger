@@ -7,7 +7,6 @@ import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
-import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 import java.nio.file.Path;
 import java.text.ParseException;
@@ -27,7 +26,10 @@ public class AddCommand extends ListenerAdapter {
                 year = getYear(date);
                 month = getMonthName(date);
             } catch (ParseException e) {
-                throw new RuntimeException(e);
+                System.out.println("Invalid date format:\n" + e);
+                event.reply("Invalid date format:\n" + e).queue();
+                return;
+
             }
             Path path = Path.of("data/" + year + "/" + month + "_" + year + ".json");
             int index = Objects.requireNonNull(event.getOption("type")).getAsInt();

@@ -267,15 +267,6 @@ public final class Util {
         }
     }
 
-    public static int getPaymentTypeIndex(PaymentType paymentType) {
-        for (int i = 0; i < CONFIG.paymentTypes().size(); i++) {
-            if (CONFIG.paymentTypes.get(i) == paymentType) {
-                return i;
-            }
-        }
-        return 0;
-    }
-
     public static PaymentType getPaymentTypeFromIndex(int index) {
         return CONFIG.paymentTypes.get(index);
     }
@@ -338,6 +329,25 @@ public final class Util {
                 .map(item -> new Command.Choice(item, getPaymentTypeIndexFromString(item)))
                 .toList();
     }
+
+    public static List<Command.Choice> collectTypes(String pathString, String query) {
+        Path path = Path.of(pathString);
+        MonthData entry = readMonthDataFromFile(path);
+        List<String> options;
+        try (Stream<WorkEntry> details = entry.workEntries.stream()) {
+            options = details
+                    .map(e -> e.paymentType.tag)
+                    .toList();
+        }
+
+        String lowercaseQuery = query.toLowerCase(Locale.ROOT);
+        return options.stream()
+                .filter(item -> item.toLowerCase(Locale.ROOT).contains(lowercaseQuery))
+                .limit(25)
+                .map(item -> new Command.Choice(item, getPaymentTypeIndexFromString(item)))
+                .toList();
+    }
+
 
     private static String getPaymentTypeString(PaymentType type) {
         return type.type + " " + CONFIG.currency() + "/h (" + type.tag + ")";

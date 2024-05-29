@@ -211,6 +211,19 @@ public final class Util {
         }
     }
 
+    public static void setPayed(Path path, int amount){
+        MonthData monthData = readMonthDataFromFile(path);
+        monthData = new MonthData(new PayStatus(true, amount), monthData.workEntries);
+
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").setPrettyPrinting().create();
+        String jsonData = gson.toJson(monthData);
+        try (FileWriter fileWriter = new FileWriter(path.toFile())) {
+            fileWriter.write(jsonData);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static void createMonthJsonIfNotExists(Path path) {
         try {
             Files.createDirectories(path.getParent());

@@ -53,6 +53,10 @@ public class RmCommand extends ListenerAdapter {
                     break;
             }
 
+            if (options == null) {
+                return;
+            }
+
             boolean isValidInput = options.stream().anyMatch(choice -> choice.getName().equalsIgnoreCase(userInput));
             if (!isValidInput) {
                 event.replyChoices(options).queue();

@@ -57,6 +57,17 @@ public final class Util {
             throw new RuntimeException("Error reading MonthData from file", e);
         }
 
+        boolean empty = true;
+        for (WorkEntry workEntry : data.workEntries) {
+            if (!workEntry.workDetails.isEmpty()) {
+                empty = false;
+                break;
+            }
+        }
+        if (empty) {
+            return "No data for this month!";
+        }
+
         mail = mail.replace("{MONTH}", getMonthLocalName(data));
         mail = mail.replace("{WORK_DATA}", createWorkData(data));
         mail = mail.replace("{DATA_SUM}", createDataSum(data));
@@ -126,6 +137,7 @@ public final class Util {
                     .append("\n");
         }
 
+        workDataBuilder.delete(workDataBuilder.length() - 2, workDataBuilder.length());
         return String.valueOf(workDataBuilder);
     }
 
@@ -166,8 +178,16 @@ public final class Util {
     }
 
     public static String getMonthLocalName(MonthData data) {
-        Date date = data.workEntries.getFirst().workDetails.getFirst().date;
+        Date date = null;
+        for (WorkEntry workEntry : data.workEntries) {
+            if (!workEntry.workDetails.isEmpty()) {
+                date = workEntry.workDetails.getFirst().date();
+                break;
+            }
+        }
+
         Calendar calendar = Calendar.getInstance();
+        assert date != null;
         calendar.setTime(date);
         return new SimpleDateFormat("MMMM", Locale.forLanguageTag(CONFIG.languageTag)).format(date);
     }
@@ -307,17 +327,23 @@ public final class Util {
     }
 
     public static List<Command.Choice> collectWorkEntries(Path path, PaymentType type, String query) {
-        WorkEntry entry = readMonthDataFromFile(path).workEntries.get(tagOrder.get(type.tag));
+        MonthData data = readMonthDataFromFile(path);
+        HashMap<String, Integer> currentTagOrder = new HashMap<>();
+        for (int i = 0; i < data.workEntries.size(); i++) {
+            currentTagOrder.put(data.workEntries.get(i).paymentType.tag, i);
+        }
+
+        WorkEntry entry = readMonthDataFromFile(path).workEntries.get(currentTagOrder.get(type.tag));
+        if (entry.workDetails.isEmpty()) {
+            return null;
+        }
+
         List<String> options;
         try (Stream<WorkDetail> details = entry.workDetails.stream()) {
             options = details
                     .map(Util::getWorkDetailString)
                     .toList();
         }
-
-        System.out.println(entry.workDetails.getFirst());
-        System.out.println(getWorkDetailFromString(options.getFirst(), getYearFromPath(path)));
-        System.out.println(entry.workDetails.indexOf(getWorkDetailFromString(options.getFirst(), getYearFromPath(path))));
 
         String lowercaseQuery = query.toLowerCase(Locale.ROOT);
         return options.stream()
@@ -349,7 +375,7 @@ public final class Util {
         List<String> options;
         try (Stream<WorkEntry> details = entry.workEntries.stream()) {
             options = details
-                    .map(e -> e.paymentType.tag)
+                    .map(e -> getPaymentTypeString(CONFIG.paymentTypes.get(tagOrder.get(e.paymentType.tag))))
                     .toList();
         }
 
@@ -392,10 +418,47 @@ public final class Util {
     }
 
     public static void removeWork(Path path, PaymentType type, int index) {
+        MonthData data = readMonthDataFromFile(path);
+        HashMap<String, Integer> currentTagOrder = new HashMap<>();
+        for (int i = 0; i < data.workEntries.size(); i++) {
+            currentTagOrder.put(data.workEntries.get(i).paymentType.tag, i);
+        }
+
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").setPrettyPrinting().create();
         MonthData monthData = readMonthDataFromFile(path);
 
-        monthData.workEntries.get(tagOrder.get(type.tag)).workDetails.remove(index);
+        int orderIndex = currentTagOrder.get(type.tag);
+        monthData.workEntries.get(orderIndex).workDetails.remove(index);
+        if (monthData.workEntries.get(orderIndex).workDetails().isEmpty()) {
+            monthData.workEntries.remove(orderIndex);
+        }
+
+        if (monthData.workEntries.isEmpty()) {
+            try {
+                Files.delete(path);
+                System.out.println("deleted: " + path);
+            } catch (IOException e) {
+                System.err.println("Failed to delete file: " + e.getMessage());
+            }
+
+            String[] dirPathArr = path.toString().split("/");
+            StringBuilder dirPath = new StringBuilder();
+            for (int i = 0; i < dirPathArr.length - 1; i++) {
+                dirPath.append(dirPathArr[i]);
+                dirPath.append("/");
+            }
+
+            File dir = new File(dirPath.toString());
+            if (dir.isDirectory() && Objects.requireNonNull(dir.list()).length == 0) {
+                try {
+                    Files.delete(dir.toPath());
+                    System.out.println("deleted: " + dir);
+                } catch (IOException e) {
+                    System.err.println("Failed to delete file: " + e.getMessage());
+                }
+            }
+            return;
+        }
 
         String jsonData = gson.toJson(monthData);
         try (FileWriter fileWriter = new FileWriter(path.toFile())) {

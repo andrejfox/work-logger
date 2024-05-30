@@ -284,14 +284,7 @@ public final class Util {
         return calendar.get(Calendar.YEAR);
     }
 
-    public static String getDateString(Date date) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        DateFormat df = DateFormat.getDateInstance(DateFormat.LONG, Locale.ENGLISH);
-        return df.format(calendar.getTime());
-    }
-
-    private static MonthData readMonthDataFromFile(Path path) {
+    public static MonthData readMonthDataFromFile(Path path) {
         Gson gson = new Gson();
         try {
             return gson.fromJson(Files.readString(path), MonthData.class);
@@ -417,7 +410,7 @@ public final class Util {
         return Integer.parseInt(pathString);
     }
 
-    public static void removeWork(Path path, PaymentType type, int index) {
+    public static String removeWork(Path path, PaymentType type, int index) {
         MonthData data = readMonthDataFromFile(path);
         HashMap<String, Integer> currentTagOrder = new HashMap<>();
         for (int i = 0; i < data.workEntries.size(); i++) {
@@ -428,6 +421,7 @@ public final class Util {
         MonthData monthData = readMonthDataFromFile(path);
 
         int orderIndex = currentTagOrder.get(type.tag);
+        String ret = monthData.workEntries.get(orderIndex).workDetails.get(index).toString();
         monthData.workEntries.get(orderIndex).workDetails.remove(index);
         if (monthData.workEntries.get(orderIndex).workDetails().isEmpty()) {
             monthData.workEntries.remove(orderIndex);
@@ -457,7 +451,7 @@ public final class Util {
                     System.err.println("Failed to delete file: " + e.getMessage());
                 }
             }
-            return;
+            return ret;
         }
 
         String jsonData = gson.toJson(monthData);
@@ -466,6 +460,8 @@ public final class Util {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        return ret;
     }
 
     public static String getWorkDetailString(WorkDetail detail) {

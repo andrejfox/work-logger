@@ -24,8 +24,16 @@ public class RmCommand extends ListenerAdapter {
                     event.reply("Invalid date!").setEphemeral(true).queue();
                     return;
                 }
-                removeWork(Path.of(path), getPaymentTypeFromIndex(Objects.requireNonNull(event.getOption("type")).getAsInt()), Objects.requireNonNull(event.getOption("work")).getAsInt());
-                event.reply("```" + "```").setEphemeral(true).queue();
+                Path path1 = Path.of(path);
+                String detail = removeWork(path1, getPaymentTypeFromIndex(Objects.requireNonNull(event.getOption("type")).getAsInt()), Objects.requireNonNull(event.getOption("work")).getAsInt());
+
+
+                String[] pathArr = Objects.requireNonNull(event.getOption("date")).getAsString().split("/");
+                String fileName = pathArr[pathArr.length - 1];
+                String fileName2 = fileName.substring(0, fileName.length() - 5);
+                fileName2 = fileName2.replace("_", " ");
+                System.out.println("/rm: [" + fileName + "] <" + getPaymentTypeFromIndex(Objects.requireNonNull(event.getOption("type")).getAsInt()).tag() + "> " + detail);
+                event.reply("Removed " + fileName2 + " [" + getPaymentTypeFromIndex(Objects.requireNonNull(event.getOption("type")).getAsInt()).tag() + "]: " + detail).setEphemeral(true).queue();
             }
         }
 

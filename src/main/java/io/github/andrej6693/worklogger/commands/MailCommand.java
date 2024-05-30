@@ -12,8 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
-import static io.github.andrej6693.worklogger.Util.collectJsonFiles;
-import static io.github.andrej6693.worklogger.Util.writeMail;
+import static io.github.andrej6693.worklogger.Util.*;
 
 public class MailCommand extends ListenerAdapter {
     @Override
@@ -24,6 +23,9 @@ public class MailCommand extends ListenerAdapter {
                 event.reply("Invalid date!").setEphemeral(true).queue();
                 return;
             }
+            String[] pathArr = Objects.requireNonNull(event.getOption("date")).getAsString().split("/");
+            String fileName = pathArr[pathArr.length - 1];
+            System.out.println("/mail: [" + fileName + "]");
             event.reply("```" + Objects.requireNonNull(writeMail(Path.of(path))) + "```").setEphemeral(true).queue();
         }
     }

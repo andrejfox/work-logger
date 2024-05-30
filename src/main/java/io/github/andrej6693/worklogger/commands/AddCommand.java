@@ -42,7 +42,12 @@ public class AddCommand extends ListenerAdapter {
             createMonthJsonIfNotExists(path);
             addData(getPaymentTypeFromIndex(index), workDetail, path);
 
-            event.reply("Successfully added work for " + getDateString(date)).queue();
+            String[] pathArr = path.toString().split("/");
+            String fileName = pathArr[pathArr.length - 1];
+            String fileName2 = fileName.substring(0, fileName.length() - 5);
+            fileName2 = fileName2.replace("_", " ");
+            System.out.println("/add: [" + fileName + "] <" + getPaymentTypeFromIndex(index).tag() + "> " + workDetail);
+            event.reply("Added " + fileName2 + " [" + getPaymentTypeFromIndex(index).tag() + "]: " + workDetail).setEphemeral(true).queue();
         }
     }
 

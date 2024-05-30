@@ -23,7 +23,15 @@ public class PayCommand extends ListenerAdapter {
                 event.reply("Invalid date!").setEphemeral(true).queue();
                 return;
             }
-            setPayed(Path.of(path), Objects.requireNonNull(event.getOption("amount")).getAsInt());
+            Path path1 = Path.of(path);
+            setPayed(path1, Objects.requireNonNull(event.getOption("amount")).getAsInt());
+
+            String[] pathArr = Objects.requireNonNull(event.getOption("date")).getAsString().split("/");
+            String fileName = pathArr[pathArr.length - 1];
+            String fileName2 = fileName.substring(0, fileName.length() - 5);
+            fileName2 = fileName2.replace("_", " ");
+            System.out.println("/pay: [" + fileName + "] -> " + readMonthDataFromFile(path1).payStatus());
+            event.reply("Set " + fileName2 + " as payed [" + readMonthDataFromFile(path1).payStatus().amount() + CONFIG.currency() + "]").setEphemeral(true).queue();
         }
     }
 

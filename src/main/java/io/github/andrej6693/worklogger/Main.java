@@ -6,17 +6,24 @@ import io.github.andrej6693.worklogger.commands.PayCommand;
 import io.github.andrej6693.worklogger.commands.RmCommand;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import org.jetbrains.annotations.NotNull;
 
 public class Main {
+    public static JDA api;
     public static void main(String[] args) {
         Util.createDefaultIfNotExists("mail.txt", "/default-mail.txt");
         Util.createDefaultIfNotExists("config.toml", "/default-config.toml");
         Util.loadConfig();
         Util.loadTagOrder();
 
-        JDA api = JDABuilder.createDefault(Util.CONFIG.botToken())
-                .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGE_REACTIONS)
+        api = JDABuilder.createDefault(Util.CONFIG.botToken())
+                .enableIntents(
+                        GatewayIntent.GUILD_MEMBERS,
+                        GatewayIntent.GUILD_MESSAGE_REACTIONS,
+                        GatewayIntent.GUILD_MESSAGES)
                 .addEventListeners(
                         new AddCommand(),
                         new MailCommand(),
@@ -31,5 +38,12 @@ public class Main {
                 RmCommand.register(),
                 PayCommand.register()
         ).queue();
+
+        api.addEventListener(new ListenerAdapter() {
+            @Override
+            public void onReady(@NotNull ReadyEvent event) {
+                Util.updateNotPayedBoard();
+            }
+        });
     }
 }

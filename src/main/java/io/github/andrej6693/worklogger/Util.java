@@ -3,8 +3,11 @@ package io.github.andrej6693.worklogger;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.moandjiezana.toml.Toml;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.Command;
 
+import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -15,12 +18,15 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Stream;
+
+import static io.github.andrej6693.worklogger.Main.api;
 
 public final class Util {
     private Util () {}
 
-    public record Config(String botToken, String languageTag, String currency, List<PaymentType> paymentTypes) {}
+    public record Config(String botToken, long channelID, String languageTag, String currency, List<PaymentType> paymentTypes) {}
     public static Config CONFIG = null;
 
     public record MonthData(PayStatus payStatus, List<WorkEntry> workEntries) {}
@@ -594,6 +600,18 @@ public final class Util {
             fileWriter.write(jsonData);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static void updateNotPayedBoard() {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Unpaid Board");
+        embedBuilder.setColor(Color.RED);
+        TextChannel channel = api.getTextChannelById(CONFIG.channelID);
+        if (channel != null) {
+            channel.sendMessageEmbeds(embedBuilder.build()).queue();
+        } else {
+            System.out.println("Channel not found");
         }
     }
 }

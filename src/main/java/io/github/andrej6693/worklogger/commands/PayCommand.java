@@ -26,6 +26,8 @@ public class PayCommand extends ListenerAdapter {
             Path path1 = Path.of(path);
             setPayed(path1, Objects.requireNonNull(event.getOption("amount")).getAsInt());
 
+            removeFromNotPayedList(path1);
+
             String[] pathArr = Objects.requireNonNull(event.getOption("date")).getAsString().split("/");
             String fileName = pathArr[pathArr.length - 1];
             String fileName2 = fileName.substring(0, fileName.length() - 5);
@@ -39,7 +41,7 @@ public class PayCommand extends ListenerAdapter {
     public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
         if (event.getName().equals("pay") && event.getFocusedOption().getName().equals("date")) {
             String userInput = event.getFocusedOption().getValue();
-            List<Command.Choice> options = collectJsonFiles(userInput);
+            List<Command.Choice> options = collectJsonFilesForPay(userInput);
             boolean isValidInput = options.stream().anyMatch(choice -> choice.getName().equalsIgnoreCase(userInput));
 
             if (!isValidInput) {

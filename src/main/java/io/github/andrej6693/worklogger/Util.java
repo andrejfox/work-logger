@@ -1,6 +1,7 @@
 package io.github.andrej6693.worklogger;
 
 import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 import com.moandjiezana.toml.Toml;
 import net.dv8tion.jda.api.interactions.commands.Command;
 
@@ -8,6 +9,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.nio.file.*;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -303,6 +305,31 @@ public final class Util {
             jsonFiles = paths
                     .filter(Files::isRegularFile)
                     .filter(p -> p.toString().endsWith(".json"))
+                    .filter(p -> !p.toString().endsWith("notPayedList.json"))
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .map(fileName -> fileName.substring(0, fileName.length() - 5))
+                    .toList();
+        } catch (IOException e) {
+            return new ArrayList<>();
+        }
+
+        String lowercaseQuery = query.toLowerCase(Locale.ROOT);
+        return jsonFiles.stream()
+                .filter(item -> item.toLowerCase(Locale.ROOT).contains(lowercaseQuery))
+                .limit(25)
+                .map(item -> new Command.Choice(item, getPathFromDate(item)))
+                .toList();
+    }
+
+    public static List<Command.Choice> collectJsonFilesForPay(String query) {
+        List<String> jsonFiles;
+        try (Stream<Path> paths = Files.walk(Path.of("data/"))) {
+            jsonFiles = paths
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(".json"))
+                    .filter(p -> !p.toString().endsWith("notPayedList.json"))
+                    .filter(p -> !readMonthDataFromFile(p).payStatus.payed)
                     .map(Path::getFileName)
                     .map(Path::toString)
                     .map(fileName -> fileName.substring(0, fileName.length() - 5))
@@ -497,6 +524,76 @@ public final class Util {
                     .orElse(null);
         } catch (IOException e) {
             return "no date";
+        }
+    }
+
+    public static void createNotPayedListIfNotExists(Path inputPath) {
+        Path path = Path.of("./data/notPayedList.json");
+        try {
+            Files.createDirectories(path.getParent());
+            Files.createFile(path);
+            List<String> list = List.of(new String[]{inputPath.toString()});
+            Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").setPrettyPrinting().create();
+            String jsonData = gson.toJson(list);
+            try (FileWriter fileWriter = new FileWriter(path.toFile())) {
+                fileWriter.write(jsonData);
+            }
+        } catch (FileAlreadyExistsException ignored) {
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to create notPayedList.json.", e);
+        }
+    }
+
+    public static List<String> readNotPayedListFromFile() {
+        Path path = Path.of("./data/notPayedList.json");
+        Gson gson = new Gson();
+        try {
+            Type listType = new TypeToken<List<String>>() {}.getType();
+            return gson.fromJson(Files.readString(path), listType);
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading notPayedList.json file", e);
+        }
+    }
+
+    public static void addToNotPayedList(Path path) {
+        Path filePath = Path.of("./data/notPayedList.json");
+        if (!Files.exists(filePath)) {
+            createNotPayedListIfNotExists(path);
+            return;
+        }
+
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").setPrettyPrinting().create();
+        List<String> payList = readNotPayedListFromFile();
+
+        if (readMonthDataFromFile(path).payStatus.payed) {
+            return;
+        }
+
+        payList.add(path.toString());
+        String jsonData = gson.toJson(payList);
+        try (FileWriter fileWriter = new FileWriter(filePath.toFile())) {
+            fileWriter.write(jsonData);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void removeFromNotPayedList(Path path) {
+        Path filePath = Path.of("./data/notPayedList.json");
+        List<String> payList = readNotPayedListFromFile();
+        String pathString = path.toString();
+        pathString = pathString.substring(2);
+        if (!payList.contains(pathString)) {
+            return;
+        }
+        payList.remove(pathString);
+
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").setPrettyPrinting().create();
+        String jsonData = gson.toJson(payList);
+        try (FileWriter fileWriter = new FileWriter(filePath.toFile())) {
+            fileWriter.write(jsonData);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

@@ -42,6 +42,8 @@ public class AddCommand extends ListenerAdapter {
             createMonthJsonIfNotExists(path);
             addData(getPaymentTypeFromIndex(index), workDetail, path);
 
+            addToNotPayedList(path);
+
             String[] pathArr = path.toString().split("/");
             String fileName = pathArr[pathArr.length - 1];
             String fileName2 = fileName.substring(0, fileName.length() - 5);

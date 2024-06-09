@@ -4,8 +4,13 @@ import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.moandjiezana.toml.Toml;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.interactions.commands.Command;
+import net.dv8tion.jda.api.requests.ErrorResponse;
+import net.dv8tion.jda.api.requests.RestAction;
 
 import java.awt.*;
 import java.io.File;
@@ -26,7 +31,7 @@ import static io.github.andrej6693.worklogger.Main.api;
 public final class Util {
     private Util () {}
 
-    public record Config(String botToken, long channelID, String languageTag, String currency, List<PaymentType> paymentTypes) {}
+    public record Config(String botToken, long channelID, long messageID, String languageTag, String currency, List<PaymentType> paymentTypes) {}
     public static Config CONFIG = null;
 
     public record MonthData(PayStatus payStatus, List<WorkEntry> workEntries) {}
@@ -203,9 +208,10 @@ public final class Util {
     public static void addData(PaymentType paymentType, WorkDetail workDetail, Path path) {
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").setPrettyPrinting().create();
         MonthData monthData = readMonthDataFromFile(path);
-
+        boolean isNew = false;
         if (monthData == null) {
             monthData = new MonthData(new PayStatus(false, 0),new ArrayList<>());
+            isNew = true;
         }
 
         if (monthData.workEntries.isEmpty()) {
@@ -236,6 +242,11 @@ public final class Util {
             fileWriter.write(jsonData);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+
+        if (isNew) {
+            addToNotPayedList(path);
+            updateNotPayedBoard();
         }
     }
 
@@ -463,6 +474,8 @@ public final class Util {
         if (monthData.workEntries.isEmpty()) {
             try {
                 Files.delete(path);
+                removeFromNotPayedList(path);
+                updateNotPayedBoard();
                 System.out.println("deleted: " + path);
             } catch (IOException e) {
                 System.err.println("Failed to delete file: " + e.getMessage());
@@ -561,6 +574,26 @@ public final class Util {
         }
     }
 
+    static void refreshToNotPayedList() {
+        List<String> jsonFiles = null;
+        try (Stream<Path> paths = Files.walk(Path.of("data/"))) {
+            jsonFiles = paths
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(".json"))
+                    .filter(p -> !p.toString().endsWith("notPayedList.json"))
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .map(str -> "./data/" + str.split("_")[1].substring(0, str.split("_")[1].length() - 5) + "/" + str)
+                    .filter(str -> !readMonthDataFromFile(Path.of(str)).payStatus.payed)
+                    .toList();
+        } catch (IOException ignored) {}
+
+        assert jsonFiles != null;
+        for (String jsonFile : jsonFiles) {
+            addToNotPayedList(Path.of(jsonFile.substring(2)));
+        }
+    }
+
     public static void addToNotPayedList(Path path) {
         Path filePath = Path.of("./data/notPayedList.json");
         if (!Files.exists(filePath)) {
@@ -605,13 +638,115 @@ public final class Util {
 
     public static void updateNotPayedBoard() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Unpaid Board");
+        embedBuilder.setTitle("** Unpaid Board **");
         embedBuilder.setColor(Color.RED);
+        embedBuilder.setDescription(getUnpayedString());
         TextChannel channel = api.getTextChannelById(CONFIG.channelID);
-        if (channel != null) {
-            channel.sendMessageEmbeds(embedBuilder.build()).queue();
-        } else {
+        if (channel == null) {
             System.out.println("Channel not found");
+            return;
+        }
+
+        if (doesMessageExist(channel, CONFIG.messageID)) {
+            editMessage(channel, CONFIG.messageID, embedBuilder);
+        } else {
+            long id = sendMessageAndGetId(channel, embedBuilder);
+            updateMessageId(id);
+        }
+    }
+
+    private static String getUnpayedString() {
+        List<String> payList = readNotPayedListFromFile();
+        StringBuilder ret = new StringBuilder();
+        for (String item : payList) {
+            ret.append("- ");
+            String name = item.split("/")[2];
+            name = name.substring(0, name.length() - 5);
+            name = name.split("_")[0] + " " + name.split("_")[1] + " [";
+            ret.append(name);
+
+            MonthData month = readMonthDataFromFile(Path.of("./" + item));
+            int sum = 0;
+            for (WorkEntry workEntry : month.workEntries) {
+                for (WorkDetail workDetail : workEntry.workDetails) {
+                    sum += workDetail.duration * workEntry.paymentType.type;
+                }
+            }
+
+            ret.append(sum);
+            ret.append(" ");
+            ret.append(CONFIG.currency);
+            ret.append("]\n");
+        }
+        return ret.toString();
+    }
+
+    public static boolean doesMessageExist(MessageChannel channel, long messageId) {
+        RestAction<Message> messageAction = channel.retrieveMessageById(messageId);
+        try {
+            Message message = messageAction.complete();
+            return (message != null);
+        } catch (ErrorResponseException e) {
+            if (e.getErrorResponse() != ErrorResponse.UNKNOWN_MESSAGE) {
+                System.err.println("Error retrieving message: " + e.getMessage());
+            }
+            return false;
+        } catch (Exception e) {
+            System.err.println("An unexpected error occurred: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static void editMessage(MessageChannel channel, long messageId, EmbedBuilder eb) {
+        channel.editMessageEmbedsById(messageId, eb.build()).queue();
+    }
+
+    public static long sendMessageAndGetId(MessageChannel channel, EmbedBuilder embedBuilder) {
+        Message message = channel.sendMessageEmbeds(embedBuilder.build()).complete();
+        return Long.parseLong(message.getId());
+    }
+
+    private static void updateMessageId(long newMessageID) {
+        File tomlFile = new File("./config.toml");
+        Config cfg = readeConfig();
+        Config updatedCfg = new Config(
+                cfg.botToken(),
+                cfg.channelID(),
+                newMessageID,
+                cfg.languageTag(),
+                cfg.currency(),
+                cfg.paymentTypes()
+        );
+
+        try {
+            writeConfig(updatedCfg, tomlFile);
+        } catch (IOException e) {
+            throw new RuntimeException("Error modifying config file", e);
+        }
+    }
+
+    public static Config readeConfig() {
+        File tomlFile = new File("./config.toml");
+        Toml toml = new Toml();
+        return toml.read(tomlFile).to(Config.class);
+    }
+
+    private static void writeConfig(Config config, File file) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        sb.append("botToken = \"").append(config.botToken()).append("\"\n");
+        sb.append("channelID = ").append(config.channelID()).append("\n");
+        sb.append("messageID = ").append(config.messageID()).append("\n");
+        sb.append("languageTag = \"").append(config.languageTag()).append("\"\n");
+        sb.append("currency = \"").append(config.currency()).append("\"\n");
+
+        sb.append("paymentTypes = [\n");
+        for (PaymentType pt : config.paymentTypes()) {
+            sb.append("  { tag = \"").append(pt.tag()).append("\", type = ").append(pt.type()).append(" },\n");
+        }
+        sb.append("]\n");
+
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(sb.toString());
         }
     }
 }

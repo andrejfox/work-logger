@@ -45,5 +45,8 @@ public class Main {
                 Util.updateNotPayedBoard();
             }
         });
+
+//        Used to add freshly added files to not paid list
+//        Util.refreshToNotPayedList();
     }
 }

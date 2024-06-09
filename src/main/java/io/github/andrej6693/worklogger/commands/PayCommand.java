@@ -18,22 +18,23 @@ public class PayCommand extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         if (event.getName().equals("pay")) {
-            String path = Objects.requireNonNull(event.getOption("date")).getAsString();
-            if (Objects.equals(path, "no date")) {
+            String pathString = Objects.requireNonNull(event.getOption("date")).getAsString();
+            if (Objects.equals(pathString, "no date")) {
                 event.reply("Invalid date!").setEphemeral(true).queue();
                 return;
             }
-            Path path1 = Path.of(path);
-            setPayed(path1, Objects.requireNonNull(event.getOption("amount")).getAsInt());
+            Path path = Path.of(pathString);
+            setPayed(path, Objects.requireNonNull(event.getOption("amount")).getAsInt());
 
-            removeFromNotPayedList(path1);
+            removeFromNotPayedList(path);
+            updateNotPayedBoard();
 
             String[] pathArr = Objects.requireNonNull(event.getOption("date")).getAsString().split("/");
             String fileName = pathArr[pathArr.length - 1];
             String fileName2 = fileName.substring(0, fileName.length() - 5);
             fileName2 = fileName2.replace("_", " ");
-            System.out.println("/pay: [" + fileName + "] -> " + readMonthDataFromFile(path1).payStatus());
-            event.reply("Set " + fileName2 + " as payed [" + readMonthDataFromFile(path1).payStatus().amount() + CONFIG.currency() + "]").setEphemeral(true).queue();
+            System.out.println("/pay: [" + fileName + "] -> " + readMonthDataFromFile(path).payStatus());
+            event.reply("Set " + fileName2 + " as payed [" + readMonthDataFromFile(path).payStatus().amount() + CONFIG.currency() + "]").setEphemeral(true).queue();
         }
     }
 

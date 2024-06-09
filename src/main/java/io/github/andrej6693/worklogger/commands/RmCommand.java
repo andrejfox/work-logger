@@ -19,14 +19,13 @@ public class RmCommand extends ListenerAdapter {
         @Override
         public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
             if (event.getName().equals("rm")) {
-                String path = Objects.requireNonNull(event.getOption("date")).getAsString();
-                if (Objects.equals(path, "no date")) {
+                String pathString = Objects.requireNonNull(event.getOption("date")).getAsString();
+                if (Objects.equals(pathString, "no date")) {
                     event.reply("Invalid date!").setEphemeral(true).queue();
                     return;
                 }
-                Path path1 = Path.of(path);
-                String detail = removeWork(path1, getPaymentTypeFromIndex(Objects.requireNonNull(event.getOption("type")).getAsInt()), Objects.requireNonNull(event.getOption("work")).getAsInt());
-
+                Path path = Path.of(pathString);
+                String detail = removeWork(path, getPaymentTypeFromIndex(Objects.requireNonNull(event.getOption("type")).getAsInt()), Objects.requireNonNull(event.getOption("work")).getAsInt());
 
                 String[] pathArr = Objects.requireNonNull(event.getOption("date")).getAsString().split("/");
                 String fileName = pathArr[pathArr.length - 1];
@@ -72,13 +71,10 @@ public class RmCommand extends ListenerAdapter {
         }
     }
 
-
         public static CommandData register() {
             return Commands.slash("rm", "Removes work.")
                     .addOption(OptionType.STRING, "date", "Date of data to be deleted.", true, true)
                     .addOption(OptionType.INTEGER, "type", "Type of payment.", true, true)
                     .addOption(OptionType.STRING, "work", "name of work to be deleted.", true, true);
         }
-
-
 }

@@ -1,5 +1,6 @@
 botToken = "" #Bot token goes here
 channel = 0 #Channel id goes here
+messageID = 0 #Message will be here
 languageTag = "en"
 currency = "€"
 paymentTypes = [

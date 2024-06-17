@@ -1,4 +1,4 @@
-package io.github.andrej6693.worklogger.commands;
+package io.github.andrejfox.worklogger.commands;
 
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -12,7 +12,7 @@ import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.*;
 
-import static io.github.andrej6693.worklogger.Util.*;
+import static io.github.andrejfox.worklogger.Util.*;
 
 public class AddCommand extends ListenerAdapter {
     @Override
@@ -22,7 +22,11 @@ public class AddCommand extends ListenerAdapter {
             String month;
             Date date;
             try {
-                date = parseDate(Objects.requireNonNull(event.getOption("date")).getAsString());
+                if (event.getOption("date") == null) {
+                    date = new Date();
+                } else {
+                    date = parseDate(Objects.requireNonNull(event.getOption("date")).getAsString());
+                }
                 year = getYear(date);
                 month = getMonthName(date);
             } catch (ParseException e) {
@@ -41,6 +45,8 @@ public class AddCommand extends ListenerAdapter {
 
             createMonthJsonIfNotExists(path);
             addData(getPaymentTypeFromIndex(index), workDetail, path);
+
+            updateNotPayedBoard();
 
             String[] pathArr = path.toString().split("/");
             String fileName = pathArr[pathArr.length - 1];
@@ -67,8 +73,8 @@ public class AddCommand extends ListenerAdapter {
     public static CommandData register() {
         return Commands.slash("add", "Add work.")
                 .addOption(OptionType.INTEGER, "type", "Type of payment.", true, true)
-                .addOption(OptionType.STRING, "date", "Date of work. Format: dd/mm/yyyy", true)
                 .addOption(OptionType.STRING, "duration", "Duration of work.", true)
-                .addOption(OptionType.STRING, "note", "Description of work.", true);
+                .addOption(OptionType.STRING, "note", "Description of work.", true)
+                .addOption(OptionType.STRING, "date", "Date of work. Format: dd/mm/yyyy", false);
     }
 }

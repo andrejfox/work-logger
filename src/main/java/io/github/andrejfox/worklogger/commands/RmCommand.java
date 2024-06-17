@@ -1,4 +1,4 @@
-package io.github.andrej6693.worklogger.commands;
+package io.github.andrejfox.worklogger.commands;
 
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static io.github.andrej6693.worklogger.Util.*;
+import static io.github.andrejfox.worklogger.Util.*;
 
 public class RmCommand extends ListenerAdapter {
         @Override

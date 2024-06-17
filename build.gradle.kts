@@ -28,7 +28,7 @@ tasks.register<Jar>("fatJar") {
     archiveClassifier.set("all")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
-        attributes("Main-Class" to "io.github.andrej6693.worklogger.Main")
+        attributes("Main-Class" to "io.github.andrejfox.worklogger.Main")
     }
 
     from(configurations.runtimeClasspath.get().map {

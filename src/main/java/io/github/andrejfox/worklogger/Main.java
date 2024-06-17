@@ -1,9 +1,9 @@
-package io.github.andrej6693.worklogger;
+package io.github.andrejfox.worklogger;
 
-import io.github.andrej6693.worklogger.commands.AddCommand;
-import io.github.andrej6693.worklogger.commands.MailCommand;
-import io.github.andrej6693.worklogger.commands.PayCommand;
-import io.github.andrej6693.worklogger.commands.RmCommand;
+import io.github.andrejfox.worklogger.commands.AddCommand;
+import io.github.andrejfox.worklogger.commands.MailCommand;
+import io.github.andrejfox.worklogger.commands.PayCommand;
+import io.github.andrejfox.worklogger.commands.RmCommand;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.events.session.ReadyEvent;

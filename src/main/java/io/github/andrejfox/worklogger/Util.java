@@ -1,4 +1,4 @@
-package io.github.andrej6693.worklogger;
+package io.github.andrejfox.worklogger;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
@@ -25,8 +25,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static io.github.andrej6693.worklogger.Main.api;
 
 public final class Util {
     private Util () {}
@@ -66,6 +64,8 @@ public final class Util {
         try {
             data = gson.fromJson(Files.readString(path), MonthData.class);
             mail =  Files.readString(Path.of("mail.txt"));
+        } catch (NoSuchFileException e) {
+            return e + "";
         } catch (IOException e) {
             throw new RuntimeException("Error reading MonthData from file", e);
         }
@@ -246,7 +246,6 @@ public final class Util {
 
         if (isNew) {
             addToNotPayedList(path);
-            updateNotPayedBoard();
         }
     }
 
@@ -641,7 +640,7 @@ public final class Util {
         embedBuilder.setTitle("** Unpaid Board **");
         embedBuilder.setColor(Color.RED);
         embedBuilder.setDescription(getUnpayedString());
-        TextChannel channel = api.getTextChannelById(CONFIG.channelID);
+        TextChannel channel = Main.api.getTextChannelById(CONFIG.channelID);
         if (channel == null) {
             System.out.println("Channel not found");
             return;

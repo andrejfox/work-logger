@@ -1,5 +1,6 @@
-package io.github.andrej6693.worklogger.commands;
+package io.github.andrejfox.worklogger.commands;
 
+import io.github.andrejfox.worklogger.Util;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -12,8 +13,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
-import static io.github.andrej6693.worklogger.Util.*;
-
 public class PayCommand extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -24,17 +23,17 @@ public class PayCommand extends ListenerAdapter {
                 return;
             }
             Path path = Path.of(pathString);
-            setPayed(path, Objects.requireNonNull(event.getOption("amount")).getAsInt());
+            Util.setPayed(path, Objects.requireNonNull(event.getOption("amount")).getAsInt());
 
-            removeFromNotPayedList(path);
-            updateNotPayedBoard();
+            Util.removeFromNotPayedList(path);
+            Util.updateNotPayedBoard();
 
             String[] pathArr = Objects.requireNonNull(event.getOption("date")).getAsString().split("/");
             String fileName = pathArr[pathArr.length - 1];
             String fileName2 = fileName.substring(0, fileName.length() - 5);
             fileName2 = fileName2.replace("_", " ");
-            System.out.println("/pay: [" + fileName + "] -> " + readMonthDataFromFile(path).payStatus());
-            event.reply("Set " + fileName2 + " as payed [" + readMonthDataFromFile(path).payStatus().amount() + CONFIG.currency() + "]").setEphemeral(true).queue();
+            System.out.println("/pay: [" + fileName + "] -> " + Util.readMonthDataFromFile(path).payStatus());
+            event.reply("Set " + fileName2 + " as payed [" + Util.readMonthDataFromFile(path).payStatus().amount() + Util.CONFIG.currency() + "]").setEphemeral(true).queue();
         }
     }
 
@@ -42,7 +41,7 @@ public class PayCommand extends ListenerAdapter {
     public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
         if (event.getName().equals("pay") && event.getFocusedOption().getName().equals("date")) {
             String userInput = event.getFocusedOption().getValue();
-            List<Command.Choice> options = collectJsonFilesForPay(userInput);
+            List<Command.Choice> options = Util.collectJsonFilesForPay(userInput);
             boolean isValidInput = options.stream().anyMatch(choice -> choice.getName().equalsIgnoreCase(userInput));
 
             if (!isValidInput) {

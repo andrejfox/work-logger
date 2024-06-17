@@ -6,7 +6,7 @@ A simple system for tracking work hours and managing financial transactions effi
 
 This project aims to create a robust system for managing work hours and payments.
 It allows users to track their work and finances effectively. This system is designed
-to meet the needs of people who wor on a per hourly baisis.
+to meet the needs of people who work on a per hourly baisis.
 
 ## Usage
 

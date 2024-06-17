@@ -10,7 +10,7 @@ to meet the needs of people who wor on a per hourly baisis.
 
 ## Usage
 
-### Dependencies
+### Requirements
 
 * Server / VPS
 * Java 21 or higher

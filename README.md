@@ -8,7 +8,7 @@ This project aims to create a robust system for managing work hours and payments
 It allows users to track their work and finances effectively. This system is designed
 to meet the needs of people who wor on a per hourly baisis.
 
-## Getting Started
+## Usage
 
 ### Dependencies
 
@@ -17,7 +17,11 @@ to meet the needs of people who wor on a per hourly baisis.
 
 ### Installing
 
-* Download the latest release
+* Check that you have java 21 or higher
+```sh
+java -version
+```
+* Download the latest release from the [release page](https://github.com/andrejfox/work-logger/releases)
 
 ### Executing program
 

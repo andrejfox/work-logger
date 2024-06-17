@@ -677,7 +677,8 @@ public final class Util {
             ret.append(CONFIG.currency);
             ret.append("]\n");
         }
-        return ret.toString();
+
+        return ret.substring(0, ret.length() -1);
     }
 
     public static boolean doesMessageExist(MessageChannel channel, long messageId) {

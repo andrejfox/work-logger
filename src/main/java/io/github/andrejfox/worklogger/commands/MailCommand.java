@@ -29,7 +29,6 @@ public class MailCommand extends ListenerAdapter {
                     return;
                 }
             }
-            System.out.println(path);
             String[] pathArr = path.split("/");
             String fileName = pathArr[pathArr.length - 1];
             System.out.println("/mail: [" + fileName + "]");

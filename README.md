@@ -17,16 +17,52 @@ to meet the needs of people who wor on a per hourly baisis.
 
 ### Installing
 
-* Check that you have java 21 or higher
-```sh
-java -version
-```
+* Check that you have java 21 or higher `java -version`
 * Download the latest release from the [release page](https://github.com/andrejfox/work-logger/releases)
 
 ### Executing program
 
-* How to run the program
-* Step-by-step bullets
-```
-code blocks for commands
-```
+* run:
+  ```
+  java -jar work-logger.jar
+  ```
+  Tihs shuld crash and create a config.toml and a mail.txt file.
+  ```sh
+  ❯ tree
+  .
+  ├── config.toml
+  ├── mail.txt
+  └── work-logger.jar
+  ```
+
+* edit the contence of those two files to look something like this:<br>
+
+  config.toml
+  ```toml
+  botToken = "MTA2ODkzNjQ2SDLKFJFQyNTA1NA.GiOhMa.EWRW.dJIAaA3RBJpvXwLqxSSE4AFDFSD23423UqJ4hR2uQ"
+  channelID = 1068986585116292096
+  messageID = 1249163115900523457
+  languageTag = "en"
+  currency = "€"
+  paymentTypes = [
+    { tag = "Teaching", type = 15 },
+    { tag = "Prep/Cleanup", type = 7 },
+  ]
+  ```
+  mail.txt
+  ```
+  Dear Mr. Employer,
+  Sending hours for {MONTH}.
+
+  {WORK_DATA}
+
+  In total:
+  {DATA_SUM}
+
+  Regards,
+  Andrej Vencelj
+  ```
+* Than just run the start command again and you are done.
+  ```
+  java -jar work-logger.jar
+  ```

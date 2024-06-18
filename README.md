@@ -39,7 +39,7 @@ to meet the needs of people who work on a per hourly baisis.
 
   config.toml
   ```toml
-  botToken = "MTA2ODkzNjQ2SDLKFJFQyNTA1NA.GiOhMa.EWRW.dJIAaA3RBJpvXwLqxSSE4AFDFSD23423UqJ4hR2uQ"
+  botToken = "MTA2ODkzNjQ2SDLKFJFQyNTA1NAiOhEWRW.dJIAaA3RBJpvXwLqxSE4AFDFSD23423UqJ4hR2u"
   channelID = 1068986585116292096
   messageID = 1249163115900523457
   languageTag = "en"
